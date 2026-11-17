@@ -283,7 +283,9 @@ ul.h-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;
     </div>
   </div>
   <div class="dlg-f">
-    <button class="btn primary" type="button" id="btnSend" hidden>Envoyer à ma boîte mail</button>
+    <div id="sendBox" hidden style="display:flex;flex-direction:column;gap:8px"><p class="hint" id="sendTo"></p>
+      <label class="check" id="ccRow" hidden><input type="checkbox" id="ccClient" checked><span id="ccText"></span></label></div>
+    <button class="btn primary" type="button" id="btnSend" hidden>Envoyer le bon par mail</button>
     <div class="row"><button class="btn small" type="button" id="btnZoom">Zoom</button><button class="btn" type="button" id="btnSave">Enregistrer le PDF</button><button class="btn small" type="button" id="btnShare" hidden>Partager</button></div>
     <button class="btn" type="button" id="btnFinish" hidden>Terminer, nouveau bon</button>
   </div>
@@ -299,7 +301,7 @@ ul.h-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;
   <div class="dlg-b">
     <div class="fld"><label for="stTech">Nom du technicien</label><input id="stTech" type="text" placeholder="Ex. Jean Dupont"></div>
     <div class="fld"><label for="stInit">Initiales dans le n° de bon</label><input id="stInit" type="text" maxlength="3" autocapitalize="characters" placeholder="Ex. JA"><p class="hint">Évite les doublons de numéros entre techniciens. Si le champ est vide, elles viennent du nom.</p></div>
-    <div class="fld"><label for="stMail">Adresse e-mail de réception</label><input id="stMail" type="email" inputmode="email" placeholder="bureau@exemple.fr"></div>
+    <div class="fld"><label for="stMail">Mon adresse e-mail (technicien SCE)</label><input id="stMail" type="email" inputmode="email" autocapitalize="none" spellcheck="false" placeholder="prenom.nom@exemple.fr"><p class="hint">Les bons envoyés arrivent à cette adresse. Le contact client du bon reçoit une copie.</p></div>
     <div class="fld"><span class="lbl">Liste clients</span>
       <p class="hint" id="clState">Aucune liste importée.</p>
       <button class="btn" type="button" id="clPick">Importer un fichier Excel ou CSV</button>
@@ -971,7 +973,7 @@ function renderHist() {
     const t = new Date(h.sentAt || h.savedAt || 0);
     li.innerHTML = '<div class="h-main"><b></b><small></small></div><div class="h-act"><button class="btn small" type="button" data-o>Rouvrir</button><button class="btn small" type="button" data-d>Supprimer</button></div>';
     $('b', li).textContent = `${h.num || '?'} · ${h.client && h.client.nom ? h.client.nom : 'Sans client'}`;
-    $('small', li).textContent = `${fmtShort(h.date)} · ${h.sentAt ? 'Envoyé à ma boîte' : 'PDF enregistré'} le ${fmtShort(`${t.getFullYear()}-${pad2(t.getMonth() + 1)}-${pad2(t.getDate())}`)} à ${pad2(t.getHours())}:${pad2(t.getMinutes())}`;
+    $('small', li).textContent = `${fmtShort(h.date)} · ${h.sentAt ? 'Envoyé par mail' : 'PDF enregistré'} le ${fmtShort(`${t.getFullYear()}-${pad2(t.getMonth() + 1)}-${pad2(t.getDate())}`)} à ${pad2(t.getHours())}:${pad2(t.getMinutes())}`;
     $('[data-o]', li).addEventListener('click', async () => {
       if (isDirty() && !isBlank(S) && !(await ask('Remplacer le bon en cours ?', 'Le brouillon actuel n\'a pas été enregistré en PDF. Il sera remplacé.', 'Rouvrir'))) return;
       const { savedAt, ...rest } = h; S = merge(blank(), rest); S.numAuto = false; S.savedSnap = core(S);
@@ -1003,9 +1005,18 @@ const urlOk = u => /^https:\/\//.test(u) || /^http:\/\/(localhost|127\.0\.0\.1)[
 const canSend = () => HOSTED && urlOk((settings.url || '').trim());
 let canShareFiles = false;
 try { canShareFiles = HOSTED && !!navigator.canShare && navigator.canShare({ files: [new File(['x'], 'a.pdf', { type: 'application/pdf' })] }); } catch (e) { canShareFiles = false; }
+const MAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+const mailList = v => String(v || '').split(/[;,\s]+/).map(x => x.trim()).filter(x => MAIL_RE.test(x));
+const techMail = () => mailList(settings.email)[0] || '';
+const clientMails = () => mailList(S.client && S.client.mail).slice(0, 3);
 function syncButtons() {
-  const send = canSend();
-  $('#btnSend').hidden = !send; $('#btnSave').classList.toggle('primary', !send); $('#btnShare').hidden = !canShareFiles;
+  const send = canSend(), t = techMail(), c = clientMails();
+  $('#btnSend').hidden = !send; $('#sendBox').hidden = !send;
+  $('#btnSave').classList.toggle('primary', !send); $('#btnShare').hidden = !canShareFiles;
+  $('#sendTo').textContent = t ? `Destinataire : ${t}` : 'Renseigne ton adresse e-mail dans les Réglages pour envoyer le bon.';
+  $('#sendTo').className = t ? 'hint' : 'hint warn';
+  $('#ccRow').hidden = !c.length;
+  $('#ccText').textContent = c.length ? `Envoyer aussi au contact client : ${c.join(', ')}` : '';
 }
 const setBusy = b => { ['#btnSend', '#btnSave', '#btnShare'].forEach(s => { $(s).disabled = b; }); };
 async function renderPreview() {
@@ -1016,7 +1027,7 @@ async function renderPreview() {
   drawBon(canvasAdapter(ctx, k), d);
 }
 $('#btnPrev').addEventListener('click', async () => {
-  say(''); $('#after').hidden = true; $('#btnFinish').hidden = true; syncButtons(); setBusy(false);
+  say(''); $('#after').hidden = true; $('#btnFinish').hidden = true; $('#ccClient').checked = true; syncButtons(); setBusy(false);
   $('#pvTitle').textContent = `Bon ${S.num || ''}`;
   $('#pvWrap').classList.remove('zoom'); $('#btnZoom').textContent = 'Zoom';
   await renderPreview(); open('#dlgPrev');
@@ -1060,12 +1071,17 @@ async function postScript(payload) {
   if (!j.ok) throw Object.assign(new Error(j.error || 'script'), { code: j.error === 'token' ? 'token' : 'script' });
 }
 async function sendMail(blob, name) {
-  const d = tech(), lines = [
-    `Bon d'intervention ${d.num}`, `Client : ${d.client.nom || '-'}`, `Date : ${fmtShort(d.date) || '-'}`,
-    `Technicien : ${d.techNom || '-'}`, `Durée : ${durStr(d.arrivee, d.depart) || '-'}`,
-    `Travail terminé : ${d.termine === 'oui' ? 'oui' : d.termine === 'non' ? 'non' : '-'}`
-  ];
-  await postScript({ filename: name, subject: `Bon d'intervention ${d.num}${d.client.nom ? ' - ' + d.client.nom : ''}`, body: lines.join('\n'), pdf: await blobToB64(blob) });
+  const to = techMail();
+  if (!to) throw Object.assign(new Error('norecipient'), { code: 'norecipient' });
+  const cc = (!$('#ccRow').hidden && $('#ccClient').checked) ? clientMails() : [];
+  const d = tech(), day = fmtShort(d.date), dur = durStr(d.arrivee, d.depart);
+  const lines = ['Bonjour,', '', `Veuillez trouver ci-joint le bon d'intervention ${d.num}${day ? ' du ' + day : ''}.`, ''];
+  if (d.client.nom) lines.push(`Client : ${d.client.nom}`);
+  if (dur) lines.push(`Durée : ${dur}`);
+  if (d.termine) lines.push(`Travail terminé : ${d.termine === 'oui' ? 'oui' : 'non'}`);
+  lines.push('', 'Cordialement,', d.techNom || 'SCE'); if (d.techNom) lines.push('SCE');
+  await postScript({ filename: name, subject: `Bon d'intervention ${d.num}${d.client.nom ? ' - ' + d.client.nom : ''}`, body: lines.join('\n'), to, cc: cc.join(','), pdf: await blobToB64(blob) });
+  return { to, cc };
 }
 function errText(e) {
   const c = e && e.code;
@@ -1073,6 +1089,8 @@ function errText(e) {
   if (c === 'nolib') return 'Le module PDF n\'a pas pu se charger. Vérifie la connexion puis recharge la page.';
   if (c === 'nodl') return 'L\'enregistrement du fichier n\'est pas disponible dans cette vue. Ouvre ce bon dans l\'application Claude ou dans le navigateur de ton téléphone.';
   if (c === 'rate_limited') return 'Une demande d\'enregistrement est déjà ouverte. Réponds-y ou patiente un instant.';
+  if (c === 'norecipient') return 'Renseigne ton adresse e-mail dans les Réglages avant d\'envoyer.';
+  if (c === 'destinataire' || c === 'domaine') return 'Le script refuse l\'adresse du technicien. Vérifie ton adresse e-mail dans les Réglages.';
   if (c === 'token') return 'Le code secret est refusé. Vérifie-le dans les réglages.';
   if (c === 'url') return 'L\'adresse du script d\'envoi manque ou n\'est pas valide. Vérifie-la dans les réglages.';
   if (c === 'script') return 'Le script d\'envoi a répondu par une erreur. Vérifie son déploiement dans Google.';
@@ -1092,10 +1110,10 @@ function mailHref() {
   const subj = encodeURIComponent(`Bon d'intervention ${S.num || ''}${S.client.nom ? ' - ' + S.client.nom : ''}`);
   return `mailto:${to}?subject=${subj}`;
 }
-function showAfter(kind) {
+function showAfter(kind, info) {
   const sent = kind === 'sent';
   $('#afterTitle').textContent = sent ? 'Bon envoyé' : 'PDF enregistré';
-  $('#afterText').textContent = sent ? 'Le bon est parti vers ta boîte mail. Tu peux aussi enregistrer le PDF sur ce téléphone.' : 'Joins le fichier à ton e-mail pour l\'envoyer.';
+  $('#afterText').textContent = sent ? `Le bon est parti vers ${[info.to, ...info.cc].join(' et ')}. Tu peux aussi enregistrer le PDF sur ce téléphone.` : 'Joins le fichier à ton e-mail pour l\'envoyer.';
   $('#mailBox').hidden = sent;
   $('#mailTo').value = settings.email || ''; $('#mailLink').href = mailHref();
   $('#after').hidden = false; $('#btnFinish').hidden = false;
@@ -1105,10 +1123,11 @@ async function run(kind) {
   setBusy(true); say('');
   try {
     const blob = await buildPdf(), name = fileName();
-    if (kind === 'send') await sendMail(blob, name);
+    let info = null;
+    if (kind === 'send') info = await sendMail(blob, name);
     else if (kind === 'share') await shareFile(blob, name);
     else await saveFile(blob, name);
-    commit(kind === 'send' ? 'sent' : 'saved'); showAfter(kind === 'send' ? 'sent' : 'saved');
+    commit(kind === 'send' ? 'sent' : 'saved'); showAfter(kind === 'send' ? 'sent' : 'saved', info);
   } catch (e) { say(errText(e)); }
   finally { setBusy(false); }
 }
@@ -1124,7 +1143,7 @@ $('#copyMail').addEventListener('click', async () => {
 $('#btnFinish').addEventListener('click', () => { $('#dlgPrev').close(); newBon(); });
 $('#stTest').addEventListener('click', async () => {
   const m = $('#stTestMsg'); m.className = 'hint'; m.textContent = 'Envoi du test…';
-  try { await postScript({ test: true, subject: 'Test Bons SCE', body: 'Si tu lis ce message, l\'envoi automatique des bons fonctionne.' }); m.textContent = 'Test envoyé. Regarde ta boîte mail, et les indésirables si rien n\'arrive.'; }
+  try { const to = techMail(); if (!to) throw Object.assign(new Error('norecipient'), { code: 'norecipient' }); await postScript({ test: true, to, subject: 'Test Bons SCE', body: 'Si tu lis ce message, l\'envoi automatique des bons fonctionne.' }); m.textContent = `Test envoyé à ${to}. Regarde ta boîte mail, et les indésirables si rien n\'arrive.`; }
   catch (e) { m.className = 'hint warn'; m.textContent = errText(e); }
 });
 
