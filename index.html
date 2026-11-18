@@ -89,9 +89,6 @@ input::placeholder,textarea::placeholder{color:var(--muted);opacity:.7}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-size:17px}
 .btn.small{min-height:46px;padding:0 12px;font-size:14px}
 .btn[disabled]{opacity:.5;cursor:default}
-.btnrow{display:flex;gap:10px}.btnrow .btn{flex:1}
-#autoSend summary,#msBox summary{cursor:pointer;min-height:32px;font:600 13px var(--font-display);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.addr{display:flex;gap:10px;align-items:center;justify-content:space-between}.addr span{min-width:0;overflow-wrap:anywhere;font-size:14px}
 .hint{margin:0;font-size:13px;color:var(--muted)}
 .hint.warn{color:var(--warn);font-weight:600}
 
@@ -289,11 +286,7 @@ ul.h-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;
     <div id="sendBox" hidden style="display:flex;flex-direction:column;gap:8px"><p class="hint" id="sendTo"></p>
       <label class="check" id="ccRow" hidden><input type="checkbox" id="ccClient" checked><span id="ccText"></span></label></div>
     <button class="btn primary" type="button" id="btnSend" hidden>Envoyer le bon par mail</button>
-    <div id="shareBox" hidden style="display:flex;flex-direction:column;gap:8px"><p class="hint">Le PDF est prêt (l'objet et le texte aussi, selon ton appli mail). Copie les adresses, colle-les dans le mail, puis touche « Envoyer ».</p>
-      <div class="addr" id="adTech"><span id="adTechTxt"></span><button class="btn small" type="button" id="cpTech">Copier</button></div>
-      <div class="addr" id="adCli" hidden><span id="adCliTxt"></span><button class="btn small" type="button" id="cpClient">Copier</button></div></div>
-    <button class="btn" type="button" id="btnShare" hidden>Partager le PDF</button>
-    <div class="row"><button class="btn small" type="button" id="btnZoom">Zoom</button><button class="btn" type="button" id="btnSave">Enregistrer le PDF</button></div>
+    <div class="row"><button class="btn small" type="button" id="btnZoom">Zoom</button><button class="btn" type="button" id="btnSave">Enregistrer le PDF</button><button class="btn small" type="button" id="btnShare" hidden>Partager</button></div>
     <button class="btn" type="button" id="btnFinish" hidden>Terminer, nouveau bon</button>
   </div>
 </div></dialog>
@@ -315,18 +308,10 @@ ul.h-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;
       <input id="clFile" type="file" accept=".xlsx,.xls,.csv,.txt,text/csv" hidden>
       <button class="btn" type="button" id="clDel" hidden>Vider la liste</button>
       <p class="hint">Colonnes attendues : Client, Adresse, CP, Ville, puis Contact, Tél et Mail pour l'intervention, puis Contact, Tél et Mail pour la facturation. Colonne facultative « Zone forfait » (un chiffre de 1 à 7) : elle remplit le déplacement. La liste reste sur ce téléphone.</p></div>
-    <div class="fld" id="sendInfo" hidden><span class="lbl">Envoi du bon</span><p class="hint">Par défaut, le bon part avec la messagerie de ton téléphone (Outlook, Mail…), depuis ta boîte habituelle : bouton « Envoyer avec ma messagerie » dans l'aperçu. Les deux options ci-dessous envoient sans ouvrir ton application mail, mais demandent une installation.</p></div>
-    <details id="msBox" hidden><summary>Envoi automatique Microsoft 365 (facultatif)</summary><div class="fld" style="margin-top:8px">
-      <p class="hint">Le bon part de ta boîte Microsoft 365, avec une copie dans tes éléments envoyés. Tu te connectes sur la page de Microsoft : l'appli ne voit jamais ton mot de passe.</p>
-      <label for="stMs">Code de configuration (donné par l'administrateur)</label><input id="stMs" type="text" autocapitalize="none" spellcheck="false" placeholder="identifiant-application:identifiant-locataire">
-      <p class="hint" id="msState"></p>
-      <div class="btnrow"><button class="btn" type="button" id="msLogin">Se connecter avec Microsoft</button><button class="btn" type="button" id="msLogout" hidden>Se déconnecter</button></div>
-      <button class="btn" type="button" id="msTest">Envoyer un mail de test</button><p class="hint" id="msTestMsg"></p>
-      <p class="hint">Adresse de redirection à déclarer dans Microsoft Entra : <b id="msRedirect" style="overflow-wrap:anywhere"></b></p></div></details>
-    <details id="autoSend" hidden><summary>Envoi automatique Google (facultatif)</summary><div class="fld" style="margin-top:8px">
+    <div class="fld" id="autoSend" hidden><span class="lbl">Envoi automatique</span>
       <label for="stUrl">Adresse du script d'envoi</label><input id="stUrl" type="url" inputmode="url" autocapitalize="none" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
       <label for="stTok">Code secret</label><input id="stTok" type="text" autocapitalize="none" spellcheck="false">
-      <button class="btn" type="button" id="stTest">Envoyer un mail de test</button><p class="hint" id="stTestMsg"></p></div></details>
+      <button class="btn" type="button" id="stTest">Envoyer un mail de test</button><p class="hint" id="stTestMsg"></p></div>
     <div class="fld"><span class="lbl">Signature mémorisée</span><button class="btn" type="button" id="stSigDel">Supprimer ma signature mémorisée</button></div>
     <p class="hint">Les bons, la liste clients et les réglages sont gardés sur ce téléphone, dans ce navigateur. Si les données du navigateur sont effacées, ils disparaissent. Les PDF enregistrés restent la référence.</p>
   </div>
@@ -387,7 +372,7 @@ function refreshNum() {
   if (S.numAuto) { S.num = computeNum(S); const el = $('#num'); if (el) el.value = S.num; }
   const b = $('#numAuto'); if (b) b.hidden = S.numAuto;
 }
-let settings = Object.assign({ tech: '', init: '', email: DEFAULT_MAIL, sigTech: '', url: '', token: '', ms: '', msUser: '' }, store.get(KEY.set, {}));
+let settings = Object.assign({ tech: '', init: '', email: DEFAULT_MAIL, sigTech: '', url: '', token: '' }, store.get(KEY.set, {}));
 const blank = () => withNum({
   id: uid(), num: '', numAuto: true, date: todayISO(),
   client: blankAddr(), fact: blankAddr(), objet: '',
@@ -837,7 +822,7 @@ const sigC = sigField($('#sigClient'), () => S.sigClient, v => { S.sigClient = v
 /* ---------- Réglages ---------- */
 function saveSettings() { store.set(KEY.set, settings); }
 const stTech = $('#stTech'), stMail = $('#stMail'), stInit = $('#stInit'), stUrl = $('#stUrl'), stTok = $('#stTok');
-function settingsToDOM() { stTech.value = settings.tech; stMail.value = settings.email; stInit.value = settings.init; stUrl.value = settings.url; stTok.value = settings.token; $('#stMs').value = settings.ms || ''; $('#autoSend').hidden = !HOSTED; $('#msBox').hidden = !HOSTED; $('#sendInfo').hidden = !HOSTED; if (settings.ms) $('#msBox').open = true; updateMs(); updateClState(); }
+function settingsToDOM() { stTech.value = settings.tech; stMail.value = settings.email; stInit.value = settings.init; stUrl.value = settings.url; stTok.value = settings.token; $('#autoSend').hidden = !HOSTED; updateClState(); }
 stTech.addEventListener('input', () => { settings.tech = stTech.value; S.techNom = stTech.value; saveSettings(); refreshNum(); onChange(); });
 stMail.addEventListener('input', () => { settings.email = stMail.value; saveSettings(); });
 stInit.addEventListener('input', () => { settings.init = stInit.value.toUpperCase().replace(/[^A-Z]/g, ''); stInit.value = settings.init; saveSettings(); refreshNum(); onChange(); });
@@ -1017,26 +1002,18 @@ $('#btnNew').addEventListener('click', async () => {
 const pvMsg = $('#pvMsg');
 const say = t => { pvMsg.hidden = !t; pvMsg.textContent = t || ''; };
 const urlOk = u => /^https:\/\//.test(u) || /^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(u);
-// DOMException.code est en lecture seule : on enveloppe l'erreur au lieu de la modifier
-const withCode = (e, code) => Object.assign(new Error((e && e.message) || code), { code });
-const canSend = () => HOSTED && (!!msCfg() || urlOk((settings.url || '').trim()));
+const canSend = () => HOSTED && urlOk((settings.url || '').trim());
 let canShareFiles = false;
 try { canShareFiles = HOSTED && !!navigator.canShare && navigator.canShare({ files: [new File(['x'], 'a.pdf', { type: 'application/pdf' })] }); } catch (e) { canShareFiles = false; }
 const MAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const mailList = v => String(v || '').split(/[;,\s]+/).map(x => x.trim()).filter(x => MAIL_RE.test(x));
-const techMail = () => mailList(settings.email)[0] || (MAIL_RE.test(settings.msUser || '') ? settings.msUser : '');
+const techMail = () => mailList(settings.email)[0] || '';
 const clientMails = () => mailList(S.client && S.client.mail).slice(0, 3);
 function syncButtons() {
   const send = canSend(), t = techMail(), c = clientMails();
   $('#btnSend').hidden = !send; $('#sendBox').hidden = !send;
-  const share = !send && canShareFiles;
-  $('#btnSave').classList.toggle('primary', !send && !canShareFiles);
-  $('#btnShare').hidden = !canShareFiles; $('#btnShare').classList.toggle('primary', share);
-  $('#btnShare').textContent = share ? 'Envoyer avec ma messagerie' : 'Partager le PDF';
-  $('#shareBox').hidden = !share;
-  $('#adTech').hidden = !t; $('#adTechTxt').textContent = `À : ${t}`;
-  $('#adCli').hidden = !c.length; $('#adCliTxt').textContent = `Cc : ${c.join(', ')}`;
-  $('#sendTo').textContent = t ? `Destinataire : ${t}${msCfg() && !settings.msUser ? ' (connexion Microsoft demandée à l\'envoi)' : ''}` : 'Renseigne ton adresse e-mail dans les Réglages pour envoyer le bon.';
+  $('#btnSave').classList.toggle('primary', !send); $('#btnShare').hidden = !canShareFiles;
+  $('#sendTo').textContent = t ? `Destinataire : ${t}` : 'Renseigne ton adresse e-mail dans les Réglages pour envoyer le bon.';
   $('#sendTo').className = t ? 'hint' : 'hint warn';
   $('#ccRow').hidden = !c.length;
   $('#ccText').textContent = c.length ? `Envoyer aussi au contact client : ${c.join(', ')}` : '';
@@ -1049,17 +1026,12 @@ async function renderPreview() {
   const ctx = cv.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, cv.width, cv.height);
   drawBon(canvasAdapter(ctx, k), d);
 }
-let pdfP = null;
-async function openPreview(note) {
-  pdfP = null; say(''); $('#after').hidden = true; $('#btnFinish').hidden = true; $('#ccClient').checked = true; syncButtons(); setBusy(false);
+$('#btnPrev').addEventListener('click', async () => {
+  say(''); $('#after').hidden = true; $('#btnFinish').hidden = true; $('#ccClient').checked = true; syncButtons(); setBusy(false);
   $('#pvTitle').textContent = `Bon ${S.num || ''}`;
   $('#pvWrap').classList.remove('zoom'); $('#btnZoom').textContent = 'Zoom';
   await renderPreview(); open('#dlgPrev');
-  pdfP = buildPdf().catch(() => null); // le PDF est préparé pendant que l'aperçu est ouvert : le partage part tout de suite
-  if (note) say(note);
-}
-const getPdf = async () => { let b = null; if (pdfP) { try { b = await pdfP; } catch (e) { b = null; } } return b || buildPdf(); };
-$('#btnPrev').addEventListener('click', () => openPreview());
+});
 $('#btnZoom').addEventListener('click', () => { const z = $('#pvWrap').classList.toggle('zoom'); $('#btnZoom').textContent = z ? 'Page entière' : 'Zoom'; });
 async function buildPdf() {
   if (!window.jspdf) throw Object.assign(new Error('jspdf'), { code: 'nolib' });
@@ -1081,9 +1053,9 @@ async function saveFile(blob, name) {
   a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
-async function shareFile(blob, name, parts) {
-  try { await navigator.share({ files: [new File([blob], name, { type: 'application/pdf' })], title: parts.subject, text: parts.body }); }
-  catch (e) { throw withCode(e, e && e.name === 'AbortError' ? 'declined' : 'share'); }
+async function shareFile(blob, name) {
+  try { await navigator.share({ files: [new File([blob], name, { type: 'application/pdf' })], title: `Bon d'intervention ${S.num || ''}` }); }
+  catch (e) { throw Object.assign(e, { code: e && e.name === 'AbortError' ? 'declined' : 'share' }); }
 }
 const blobToB64 = b => new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1] || ''); fr.onerror = () => rej(new Error('read')); fr.readAsDataURL(b); });
 async function postScript(payload) {
@@ -1092,33 +1064,27 @@ async function postScript(payload) {
   const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 60000);
   let res;
   try { res = await fetch(url, { method: 'POST', body: JSON.stringify({ token: settings.token || '', ...payload }), signal: ctrl.signal }); }
-  catch (e) { throw withCode(e, e && e.name === 'AbortError' ? 'timeout' : 'network'); }
+  catch (e) { throw Object.assign(e, { code: e && e.name === 'AbortError' ? 'timeout' : 'network' }); }
   finally { clearTimeout(t); }
   let j = null; try { j = await res.json(); } catch (e) { j = null; }
   if (!j) throw Object.assign(new Error('bad'), { code: 'script' });
   if (!j.ok) throw Object.assign(new Error(j.error || 'script'), { code: j.error === 'token' ? 'token' : 'script' });
 }
-function mailParts() {
+async function sendMail(blob, name) {
+  const to = techMail();
+  if (!to) throw Object.assign(new Error('norecipient'), { code: 'norecipient' });
+  const cc = (!$('#ccRow').hidden && $('#ccClient').checked) ? clientMails() : [];
   const d = tech(), day = fmtShort(d.date), dur = durStr(d.arrivee, d.depart);
   const lines = ['Bonjour,', '', `Veuillez trouver ci-joint le bon d'intervention ${d.num}${day ? ' du ' + day : ''}.`, ''];
   if (d.client.nom) lines.push(`Client : ${d.client.nom}`);
   if (dur) lines.push(`Durée : ${dur}`);
   if (d.termine) lines.push(`Travail terminé : ${d.termine === 'oui' ? 'oui' : 'non'}`);
   lines.push('', 'Cordialement,', d.techNom || 'SCE'); if (d.techNom) lines.push('SCE');
-  return { subject: `Bon d'intervention ${d.num}${d.client.nom ? ' - ' + d.client.nom : ''}`, body: lines.join('\n') };
-}
-async function sendMail(blob, name) {
-  const to = techMail();
-  if (!to) throw Object.assign(new Error('norecipient'), { code: 'norecipient' });
-  const cc = (!$('#ccRow').hidden && $('#ccClient').checked) ? clientMails() : [];
-  const { subject, body } = mailParts(), b64 = await blobToB64(blob);
-  if (msCfg()) await msSend('send', { to, cc, subject, body, filename: name, b64 });
-  else await postScript({ filename: name, subject, body, to, cc: cc.join(','), pdf: b64 });
+  await postScript({ filename: name, subject: `Bon d'intervention ${d.num}${d.client.nom ? ' - ' + d.client.nom : ''}`, body: lines.join('\n'), to, cc: cc.join(','), pdf: await blobToB64(blob) });
   return { to, cc };
 }
 function errText(e) {
-  let c = e && e.code;
-  if (!c && e && (e.errorCode || e.errorMessage)) c = msErrKey(e);
+  const c = e && e.code;
   if (c === 'declined') return 'Action annulée. Tu peux relancer quand tu veux.';
   if (c === 'nolib') return 'Le module PDF n\'a pas pu se charger. Vérifie la connexion puis recharge la page.';
   if (c === 'nodl') return 'L\'enregistrement du fichier n\'est pas disponible dans cette vue. Ouvre ce bon dans l\'application Claude ou dans le navigateur de ton téléphone.';
@@ -1128,25 +1094,8 @@ function errText(e) {
   if (c === 'token') return 'Le code secret est refusé. Vérifie-le dans les réglages.';
   if (c === 'url') return 'L\'adresse du script d\'envoi manque ou n\'est pas valide. Vérifie-la dans les réglages.';
   if (c === 'script') return 'Le script d\'envoi a répondu par une erreur. Vérifie son déploiement dans Google.';
-  if (c === 'timeout') return 'Le service d\'envoi met trop de temps à répondre. Vérifie ta boîte mail avant de renvoyer.';
-  if (c === 'redirect') return 'Connexion à Microsoft en cours…';
-  if (c === 'msconfig') return 'Colle d\'abord le code de configuration Microsoft dans les Réglages.';
-  if (c === 'nomsal') return 'Le module de connexion Microsoft n\'a pas pu se charger. Vérifie la connexion puis recharge la page.';
-  if (c === 'ms_consent') return 'Microsoft demande l\'accord d\'un administrateur pour cette application. Transmets-lui la procédure.';
-  if (c === 'ms_redirect') return `L'adresse de redirection n'est pas déclarée dans Microsoft Entra : ${REDIRECT}`;
-  if (c === 'ms_spa') return 'Dans Microsoft Entra, l\'adresse de redirection doit être déclarée dans la plateforme « Application monopage (SPA) ».';
-  if (c === 'ms_client') return 'Microsoft ne reconnaît pas cette application. Vérifie le code de configuration (application et locataire).';
-  if (c === 'ms_account') return 'Ce compte n\'appartient pas à l\'organisation configurée. Connecte-toi avec ton adresse SCE.';
-  if (c === 'ms_policy') return 'Ton organisation bloque cette connexion (accès conditionnel). Contacte l\'administrateur.';
-  if (c === 'ms_cancel') return 'Connexion annulée. Tu peux relancer quand tu veux.';
-  if (c === 'ms_auth') return 'Ta connexion Microsoft a expiré. Touche Envoyer pour te reconnecter.';
-  if (c === 'ms_denied') return 'Microsoft refuse l\'envoi : l\'accord « Mail.Send » manque ou la boîte est restreinte. Reconnecte-toi, ou demande à l\'administrateur.';
-  if (c === 'ms_mailbox') return 'Cette boîte aux lettres ne permet pas l\'envoi depuis l\'appli (boîte non Exchange Online ou non activée).';
-  if (c === 'ms_size') return 'Le message est trop gros pour Microsoft. Enregistre le PDF et envoie-le à la main.';
-  if (c === 'ms_busy') return 'Microsoft est occupé ou limite les envois. Patiente un peu, et vérifie tes éléments envoyés avant de renvoyer.';
-  if (c === 'ms_http') return `Microsoft a refusé l'envoi (erreur ${e.status}${e.detail ? ' ' + e.detail : ''}).`;
-  if (c === 'ms_other') { const m = String((e && (e.errorMessage || e.message)) || '').match(/AADSTS\d+/); return 'Connexion Microsoft impossible' + (m ? ` (${m[0]})` : '') + '.'; }
-  if (c === 'network') return 'Envoi non confirmé : pas de connexion ou service injoignable. Vérifie ta boîte mail avant de renvoyer, ou enregistre le PDF.';
+  if (c === 'timeout') return 'Le script d\'envoi met trop de temps à répondre. Vérifie ta boîte mail avant de renvoyer.';
+  if (c === 'network') return 'Envoi non confirmé : pas de connexion ou script injoignable. Vérifie ta boîte mail avant de renvoyer, ou enregistre le PDF.';
   return 'L\'opération n\'a pas pu aboutir' + (c ? ` (${c})` : '') + '.';
 }
 function commit(kind) {
@@ -1158,16 +1107,14 @@ function commit(kind) {
 }
 function mailHref() {
   const to = $('#mailTo').value.trim().replace(/[\s?&#]/g, '');
-  const cc = clientMails().join(',').replace(/[\s?&#]/g, ''), p = mailParts();
-  return `mailto:${to}?${cc ? 'cc=' + cc + '&' : ''}subject=${encodeURIComponent(p.subject)}&body=${encodeURIComponent(p.body)}`;
+  const subj = encodeURIComponent(`Bon d'intervention ${S.num || ''}${S.client.nom ? ' - ' + S.client.nom : ''}`);
+  return `mailto:${to}?subject=${subj}`;
 }
 function showAfter(kind, info) {
-  const sent = kind === 'sent', shared = kind === 'shared';
-  $('#afterTitle').textContent = sent ? 'Bon envoyé' : shared ? 'PDF transmis à ta messagerie' : 'PDF enregistré';
-  $('#afterText').textContent = sent ? `Le bon est parti vers ${[info.to, ...info.cc].join(' et ')}. Tu peux aussi enregistrer le PDF sur ce téléphone.`
-    : shared ? 'Dans ton application mail, vérifie les adresses puis touche Envoyer. Si tu es sorti sans envoyer, relance « Envoyer avec ma messagerie ».'
-    : 'Joins le fichier à ton e-mail pour l\'envoyer.';
-  $('#mailBox').hidden = sent || shared;
+  const sent = kind === 'sent';
+  $('#afterTitle').textContent = sent ? 'Bon envoyé' : 'PDF enregistré';
+  $('#afterText').textContent = sent ? `Le bon est parti vers ${[info.to, ...info.cc].join(' et ')}. Tu peux aussi enregistrer le PDF sur ce téléphone.` : 'Joins le fichier à ton e-mail pour l\'envoyer.';
+  $('#mailBox').hidden = sent;
   $('#mailTo').value = settings.email || ''; $('#mailLink').href = mailHref();
   $('#after').hidden = false; $('#btnFinish').hidden = false;
   $('#after').scrollIntoView({ block: 'nearest' });
@@ -1175,23 +1122,17 @@ function showAfter(kind, info) {
 async function run(kind) {
   setBusy(true); say('');
   try {
-    const blob = await getPdf(), name = fileName();
+    const blob = await buildPdf(), name = fileName();
     let info = null;
     if (kind === 'send') info = await sendMail(blob, name);
-    else if (kind === 'share') await shareFile(blob, name, mailParts());
+    else if (kind === 'share') await shareFile(blob, name);
     else await saveFile(blob, name);
-    commit(kind === 'send' ? 'sent' : 'saved'); showAfter(kind === 'send' ? 'sent' : kind === 'share' ? 'shared' : 'saved', info);
+    commit(kind === 'send' ? 'sent' : 'saved'); showAfter(kind === 'send' ? 'sent' : 'saved', info);
   } catch (e) { say(errText(e)); }
   finally { setBusy(false); }
 }
 $('#btnSave').addEventListener('click', () => run('save'));
 $('#btnShare').addEventListener('click', () => run('share'));
-async function copyTo(btn, text) {
-  try { await navigator.clipboard.writeText(text); btn.textContent = 'Copiée'; } catch (e) { btn.textContent = 'Non copiée'; }
-  setTimeout(() => { btn.textContent = 'Copier'; }, 1500);
-}
-$('#cpTech').addEventListener('click', e => copyTo(e.currentTarget, techMail()));
-$('#cpClient').addEventListener('click', e => copyTo(e.currentTarget, clientMails().join('; ')));
 $('#btnSend').addEventListener('click', () => run('send'));
 $('#mailTo').addEventListener('input', () => { settings.email = $('#mailTo').value; saveSettings(); $('#mailLink').href = mailHref(); });
 $('#copyMail').addEventListener('click', async () => {
@@ -1206,156 +1147,12 @@ $('#stTest').addEventListener('click', async () => {
   catch (e) { m.className = 'hint warn'; m.textContent = errText(e); }
 });
 
-/* ---------- Microsoft 365 (connexion + envoi par Microsoft Graph) ---------- */
-const MSAL_SRC = 'vendor/msal-browser.min.js';
-const MS_SCOPES = ['User.Read', 'Mail.Send'];
-const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const REDIRECT = location.origin + location.pathname.replace(/index\.html$/, '');
-function msCfg() {
-  const p = String(settings.ms || '').trim().split(/[\s:;|,]+/).filter(Boolean);
-  if (p.length !== 2 || !GUID_RE.test(p[0])) return null;
-  if (!GUID_RE.test(p[1]) && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(p[1])) return null;
-  return { clientId: p[0].toLowerCase(), tenant: p[1].toLowerCase() };
-}
-const loadLib = (src, ready) => new Promise((res, rej) => {
-  if (ready()) return res();
-  const s = document.createElement('script'); s.src = src; s.onload = () => res(); s.onerror = () => rej(Object.assign(new Error('lib'), { code: 'nomsal' }));
-  document.head.appendChild(s);
-});
-let msalP = null, msalKey = '', msBootP = Promise.resolve();
-function getMsal() {
-  const cfg = msCfg();
-  if (!cfg) return Promise.reject(Object.assign(new Error('msconfig'), { code: 'msconfig' }));
-  const key = cfg.clientId + ':' + cfg.tenant;
-  if (msalP && msalKey === key) return msalP;
-  msalKey = key;
-  msalP = (async () => {
-    await loadLib(MSAL_SRC, () => !!window.msal);
-    const app = new window.msal.PublicClientApplication({
-      auth: { clientId: cfg.clientId, authority: 'https://login.microsoftonline.com/' + cfg.tenant, redirectUri: REDIRECT, postLogoutRedirectUri: REDIRECT, navigateToLoginRequestUrl: false },
-      cache: { cacheLocation: 'localStorage' },
-      system: { iframeHashTimeout: 6000 }
-    });
-    await app.initialize();
-    return app;
-  })().catch(e => { msalP = null; throw e; });
-  return msalP;
-}
-function msErrKey(e) {
-  const t = String((e && (e.errorMessage || e.message)) || '') + ' ' + String((e && e.subError) || ''), c = (e && (e.errorCode || e.code)) || '';
-  if (/AADSTS(50011|500113)\b/.test(t)) return 'ms_redirect';
-  if (/AADSTS9002326/.test(t)) return 'ms_spa';
-  if (/AADSTS700016/.test(t)) return 'ms_client';
-  if (/AADSTS(65001|90094|900941|65002|90008|650057|65005)\b/.test(t) || c === 'consent_required') return 'ms_consent';
-  if (/AADSTS(50020|50034|90072)\b/.test(t)) return 'ms_account';
-  if (/AADSTS(53003|53000|53001|50105)\b/.test(t)) return 'ms_policy';
-  if (/AADSTS65004/.test(t) || c === 'user_cancelled') return 'ms_cancel';
-  return 'ms_other';
-}
-const MS_INTERACTIVE = ['interaction_required', 'login_required', 'consent_required', 'no_tokens_found', 'no_account_error', 'monitor_window_timeout', 'timed_out', 'empty_window_error', 'hash_empty_error', 'silent_sso_error', 'invalid_grant', 'user_login_error'];
-const msNeedsUser = e => !!e && ((window.msal && e instanceof window.msal.InteractionRequiredAuthError) || MS_INTERACTIVE.includes(e.errorCode || e.code));
-async function msSignIn(what, acc) {
-  try { localStorage.setItem('sce.msPending', JSON.stringify({ what, t: Date.now() })); } catch (e) { /* stockage indisponible */ }
-  const app = await getMsal();
-  if (acc) return app.acquireTokenRedirect({ scopes: MS_SCOPES, account: acc });
-  const hint = techMail() || settings.msUser || '';
-  return app.loginRedirect(hint ? { scopes: MS_SCOPES, loginHint: hint } : { scopes: MS_SCOPES });
-}
-async function msToken(what) {
-  await msBootP;
-  const app = await getMsal();
-  const acc = app.getActiveAccount() || app.getAllAccounts()[0] || null;
-  const redirect = async a => { await msSignIn(what, a); throw Object.assign(new Error('redirect'), { code: 'redirect' }); };
-  if (!acc) return redirect(null);
-  try { return (await app.acquireTokenSilent({ scopes: ['Mail.Send'], account: acc })).accessToken; }
-  catch (e) { if (!msNeedsUser(e)) throw e; return redirect(acc); }
-}
-async function msSend(what, m) {
-  const token = await msToken(what);
-  const msg = { subject: m.subject, body: { contentType: 'Text', content: m.body }, toRecipients: [{ emailAddress: { address: m.to } }] };
-  if (m.cc && m.cc.length) msg.ccRecipients = m.cc.map(a => ({ emailAddress: { address: a } }));
-  if (m.b64) msg.attachments = [{ '@odata.type': '#microsoft.graph.fileAttachment', name: m.filename, contentType: 'application/pdf', contentBytes: m.b64 }];
-  const ctrl = new AbortController(), t = setTimeout(() => ctrl.abort(), 60000);
-  let res;
-  try { res = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg, saveToSentItems: true }), signal: ctrl.signal }); }
-  catch (e) { throw withCode(e, e && e.name === 'AbortError' ? 'timeout' : 'network'); }
-  finally { clearTimeout(t); }
-  if (res.status === 202) return;
-  let j = null; try { j = await res.json(); } catch (e) { j = null; }
-  const gc = String((j && j.error && j.error.code) || '');
-  const code = res.status === 401 ? 'ms_auth' : res.status === 403 ? 'ms_denied' : (res.status === 404 || /MailboxNotEnabled|MailboxNotSupported|ResourceNotFound/i.test(gc)) ? 'ms_mailbox' : res.status === 413 ? 'ms_size' : (res.status === 429 || res.status >= 500) ? 'ms_busy' : 'ms_http';
-  if (res.status === 401) { try { await (await getMsal()).clearCache(); } catch (e) { /* ignoré */ } }
-  throw Object.assign(new Error(gc || String(res.status)), { code, status: res.status, detail: gc });
-}
-function msOnSignedIn(acc) {
-  settings.msUser = acc.username || '';
-  if (!mailList(settings.email).length && MAIL_RE.test(settings.msUser)) { settings.email = settings.msUser; if (stMail) stMail.value = settings.email; }
-  saveSettings(); syncButtons(); updateMs();
-}
-function msAfterReturn(err) {
-  let p = null;
-  try { p = JSON.parse(localStorage.getItem('sce.msPending') || 'null'); localStorage.removeItem('sce.msPending'); } catch (e) { p = null; }
-  if (!p || Date.now() - p.t > 20 * 60 * 1000) return;
-  if (p.what === 'send') {
-    openPreview(err ? errText(err) : 'Connexion Microsoft réussie. Touche « Envoyer le bon par mail » pour l\'envoyer.');
-  } else {
-    settingsToDOM(); open('#dlgSet');
-    const m = $('#msTestMsg'); m.className = err ? 'hint warn' : 'hint';
-    m.textContent = err ? errText(err) : (p.what === 'test' ? 'Connexion réussie. Touche « Envoyer un mail de test ».' : 'Connexion réussie.');
-  }
-}
-function msBoot() {
-  if (!HOSTED || !msCfg()) return;
-  msBootP = (async () => {
-    let err = null, res = null, app = null;
-    try { app = await getMsal(); res = await app.handleRedirectPromise(); } catch (e) { err = e; }
-    if (app) {
-      if (res && res.account) { app.setActiveAccount(res.account); msOnSignedIn(res.account); }
-      else { const a = app.getAllAccounts(); if (a.length) app.setActiveAccount(a[0]); }
-    }
-    msAfterReturn(err);
-  })().catch(() => {});
-}
-function updateMs() {
-  const st = $('#msState'); if (!st) return;
-  const cfg = msCfg(), raw = String(settings.ms || '').trim();
-  $('#msRedirect').textContent = REDIRECT;
-  $('#msLogin').disabled = !cfg; $('#msTest').disabled = !cfg;
-  $('#msLogin').textContent = settings.msUser ? 'Se reconnecter à Microsoft' : 'Se connecter avec Microsoft';
-  $('#msLogout').hidden = !(cfg && settings.msUser);
-  st.className = 'hint';
-  if (!raw) st.textContent = 'Colle le code de configuration donné par ton administrateur.';
-  else if (!cfg) { st.className = 'hint warn'; st.textContent = 'Code non reconnu. Format attendu : identifiant-application:identifiant-locataire.'; }
-  else st.textContent = settings.msUser ? `Connecté : ${settings.msUser}` : 'Pas encore connecté.';
-}
-$('#stMs').addEventListener('input', () => { settings.ms = $('#stMs').value.trim(); saveSettings(); updateMs(); syncButtons(); });
-$('#msLogin').addEventListener('click', async () => {
-  const m = $('#msTestMsg'); m.className = 'hint'; m.textContent = 'Ouverture de la page Microsoft…';
-  try { await msBootP; await msSignIn('settings', null); } catch (e) { m.className = 'hint warn'; m.textContent = errText(e); }
-});
-$('#msLogout').addEventListener('click', async () => {
-  const m = $('#msTestMsg'); m.className = 'hint';
-  try { await msBootP; await (await getMsal()).clearCache(); } catch (e) { /* rien à effacer */ }
-  settings.msUser = ''; saveSettings(); updateMs(); syncButtons();
-  m.textContent = 'Déconnecté de l\'appli. La session Microsoft du navigateur peut rester ouverte.';
-});
-$('#msTest').addEventListener('click', async () => {
-  const m = $('#msTestMsg'); m.className = 'hint'; m.textContent = 'Envoi du test…';
-  try {
-    const to = techMail(); if (!to) throw Object.assign(new Error('norecipient'), { code: 'norecipient' });
-    await msSend('test', { to, subject: 'Test Bons SCE', body: 'Si tu lis ce message, l\'envoi des bons depuis ta boîte Microsoft 365 fonctionne.' });
-    m.textContent = `Test envoyé à ${to}. Regarde ta boîte mail, et les indésirables si rien n'arrive.`;
-  } catch (e) { m.className = e && e.code === 'redirect' ? 'hint' : 'hint warn'; m.textContent = errText(e); }
-});
-
 /* ---------- Démarrage ---------- */
 if (!S.sigTech && settings.sigTech) S.sigTech = settings.sigTech;
 if (!settings.email) settings.email = DEFAULT_MAIL;
 buildIndex(); setupAC('client'); setupAC('fact');
 if (!S.num) S.num = computeNum(S);
 toDOM(); sigT.sync(); sigC.sync(); updateClState(); syncButtons();
-if (HOSTED && settings.url && $('#autoSend')) $('#autoSend').open = true;
-msBoot();
 if (HOSTED && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 window.addEventListener('beforeunload', () => store.set(KEY.draft, S));
 })();
